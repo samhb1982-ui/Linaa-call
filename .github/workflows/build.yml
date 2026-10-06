@@ -62,52 +62,36 @@ jobs:
           p = Path("linaa/app/build.gradle.kts")
           text = p.read_text()
 
-          # Force Java compilation to target Java 17.
-          text = re.sub(
-              r'sourceCompatibility\s*=\s*JavaVersion\.VERSION_1_8',
-              'sourceCompatibility = JavaVersion.VERSION_17',
-              text
+          # Java 17
+          text = text.replace(
+              "sourceCompatibility = JavaVersion.VERSION_1_8",
+              "sourceCompatibility = JavaVersion.VERSION_17"
           )
 
-          text = re.sub(
-              r'targetCompatibility\s*=\s*JavaVersion\.VERSION_1_8',
-              'targetCompatibility = JavaVersion.VERSION_17',
-              text
+          text = text.replace(
+              "targetCompatibility = JavaVersion.VERSION_1_8",
+              "targetCompatibility = JavaVersion.VERSION_17"
           )
 
-          # If compileOptions does not exist, add it inside the android block.
-          if "compileOptions" not in text:
-              match = re.search(r'android\s*\{', text)
-
-              if match:
-                  pos = match.end()
-                  block = """
-              compileOptions {
-                  sourceCompatibility = JavaVersion.VERSION_17
-                  targetCompatibility = JavaVersion.VERSION_17
-              }
-          """
-                  text = text[:pos] + block + text[pos:]
-              else:
-                  text += """
-
-          android {
-              compileOptions {
-                  sourceCompatibility = JavaVersion.VERSION_17
-                  targetCompatibility = JavaVersion.VERSION_17
-              }
-          }
-          """
-
-          # Force Kotlin JVM target to 17 if the project explicitly uses 1.8.
+          # Kotlin 17
           text = text.replace(
               'jvmTarget = "1.8"',
               'jvmTarget = "17"'
           )
 
+          # AndroidX WebKit is required by MainActivity.kt
+          if "androidx.webkit:webkit" not in text:
+              text += """
+
+          dependencies {
+              implementation("androidx.webkit:webkit:1.14.0")
+          }
+          """
+
           p.write_text(text)
 
-          print("Android project configured for Java/Kotlin 17.")
+          print("Android project configured successfully.")
+          print("Added AndroidX WebKit dependency.")
           PY
 
       - name: Build Linaa
