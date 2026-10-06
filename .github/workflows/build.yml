@@ -1,0 +1,41 @@
+name: Build Linaa APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Get project
+        uses: actions/checkout@v4
+
+      - name: Extract Linaa project
+        run: |
+          mkdir linaa
+          unzip -q linaa-android-v2-ci.zip -d linaa
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Build APK
+        working-directory: linaa
+        run: gradle :app:assembleDebug
+
+      - name: Give me the APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Linaa-APK
+          path: linaa/app/build/outputs/apk/debug/app-debug.apk
