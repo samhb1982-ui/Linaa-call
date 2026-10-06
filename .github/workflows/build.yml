@@ -38,22 +38,43 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Configure JVM targets
+      - name: Configure Android project
         working-directory: linaa
         run: |
-          cat >> build.gradle <<'EOF'
+          cat >> gradle.properties <<'EOF'
+          android.useAndroidX=true
+          android.enableJetifier=true
+          kotlin.jvm.target.validation.mode=warning
+          EOF
 
-          subprojects {
-              tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
-                  kotlinOptions.jvmTarget = "17"
-              }
+          python3 - <<'PY'
+          from pathlib import Path
 
-              tasks.withType(JavaCompile).configureEach {
-                  sourceCompatibility = "17"
-                  targetCompatibility = "17"
+          p = Path("app/build.gradle")
+          text = p.read_text()
+
+          if "compileOptions" in text:
+              text = text.replace(
+                  "sourceCompatibility JavaVersion.VERSION_1_8",
+                  "sourceCompatibility JavaVersion.VERSION_17"
+              )
+              text = text.replace(
+                  "targetCompatibility JavaVersion.VERSION_1_8",
+                  "targetCompatibility JavaVersion.VERSION_17"
+              )
+          else:
+              text += """
+
+          android {
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_17
+                  targetCompatibility JavaVersion.VERSION_17
               }
           }
-          EOF
+          """
+
+          p.write_text(text)
+          PY
 
       - name: Build Linaa
         working-directory: linaa
