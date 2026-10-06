@@ -38,6 +38,12 @@ jobs:
         with:
           gradle-version: '8.9'
 
+      - name: Configure JVM targets
+        working-directory: linaa
+        run: |
+          printf '\nandroid.useAndroidX=true\nandroid.enableJetifier=true\n' >> gradle.properties
+          printf '\norg.gradle.java.home=%s\n' "$JAVA_HOME" >> gradle.properties
+
       - name: Build Linaa
         working-directory: linaa
         run: gradle :app:assembleDebug --stacktrace
