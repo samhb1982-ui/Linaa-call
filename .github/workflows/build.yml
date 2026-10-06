@@ -41,8 +41,19 @@ jobs:
       - name: Configure JVM targets
         working-directory: linaa
         run: |
-          printf '\nandroid.useAndroidX=true\nandroid.enableJetifier=true\n' >> gradle.properties
-          printf '\norg.gradle.java.home=%s\n' "$JAVA_HOME" >> gradle.properties
+          cat >> build.gradle <<'EOF'
+
+          subprojects {
+              tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+                  kotlinOptions.jvmTarget = "17"
+              }
+
+              tasks.withType(JavaCompile).configureEach {
+                  sourceCompatibility = "17"
+                  targetCompatibility = "17"
+              }
+          }
+          EOF
 
       - name: Build Linaa
         working-directory: linaa
