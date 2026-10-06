@@ -16,13 +16,8 @@ jobs:
           mkdir linaa
           unzip -q linaa-android-v2-ci.zip -d linaa
 
-          if [ ! -f "linaa/app/build.gradle.kts" ]; then
-            echo "ERROR: Android project not found"
-            find linaa -type f | sort
-            exit 1
-          fi
-
-          echo "Android project found successfully."
+          test -f linaa/app/build.gradle.kts
+          echo "Android project found."
 
       - name: Set up Java 17
         uses: actions/setup-java@v4
@@ -57,41 +52,50 @@ jobs:
 
           python3 - <<'PY'
           from pathlib import Path
-          import re
 
           p = Path("linaa/app/build.gradle.kts")
           text = p.read_text()
 
-          # Java 17
-          text = text.replace(
-              "sourceCompatibility = JavaVersion.VERSION_1_8",
-              "sourceCompatibility = JavaVersion.VERSION_17"
-          )
+          # Add AndroidX WebKit directly inside the existing dependencies block.
+          if 'androidx.webkit:webkit' not in text:
+              text = text.replace(
+                  'dependencies {',
+                  '''dependencies {
+              implementation("androidx.webkit:webkit:1.14.0")''',
+                  1
+              )
 
-          text = text.replace(
-              "targetCompatibility = JavaVersion.VERSION_1_8",
-              "targetCompatibility = JavaVersion.VERSION_17"
-          )
+          # Force Java compilation to Java 17.
+          if "compileOptions" not in text:
+              text = text.replace(
+                  'android {',
+                  '''android {
+              compileOptions {
+                  sourceCompatibility = JavaVersion.VERSION_17
+                  targetCompatibility = JavaVersion.VERSION_17
+              }''',
+                  1
+              )
+          else:
+              text = text.replace(
+                  'JavaVersion.VERSION_1_8',
+                  'JavaVersion.VERSION_17'
+              )
 
-          # Kotlin 17
-          text = text.replace(
-              'jvmTarget = "1.8"',
-              'jvmTarget = "17"'
-          )
+          # Force Kotlin JVM target to 17.
+          if 'jvmTarget = "17"' not in text:
+              text += '''
 
-          # AndroidX WebKit is required by MainActivity.kt
-          if "androidx.webkit:webkit" not in text:
-              text += """
-
-          dependencies {
-              implementation("androidx.webkit:webkit:1.14.0")
+          kotlin {
+              jvmToolchain(17)
           }
-          """
+          '''
 
           p.write_text(text)
 
-          print("Android project configured successfully.")
-          print("Added AndroidX WebKit dependency.")
+          print("===== FINAL app/build.gradle.kts =====")
+          print(p.read_text())
+          print("=======================================")
           PY
 
       - name: Build Linaa
