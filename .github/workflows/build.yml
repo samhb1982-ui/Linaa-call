@@ -16,15 +16,21 @@ jobs:
           mkdir linaa
           unzip -q linaa-android-v2-ci.zip -d linaa
 
-          PROJECT_DIR=$(find linaa -type f -path '*/app/build.gradle' -print -quit | xargs dirname | xargs dirname)
+          BUILD_FILE=$(find linaa -type f -path '*/app/build.gradle' -print -quit)
 
-          if [ -z "$PROJECT_DIR" ] || [ ! -f "$PROJECT_DIR/app/build.gradle" ]; then
-            echo "ERROR: Could not find Android project"
-            find linaa -maxdepth 5 -type f | sort
+          if [ -z "$BUILD_FILE" ]; then
+            echo "ERROR: Could not find app/build.gradle"
+            echo ""
+            echo "Files inside the ZIP:"
+            find linaa -type f | sort
             exit 1
           fi
 
-          echo "Found Android project at: $PROJECT_DIR"
+          PROJECT_DIR=$(dirname "$(dirname "$BUILD_FILE")")
+
+          echo "Found Android project:"
+          echo "$PROJECT_DIR"
+
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
 
       - name: Set up Java 17
@@ -74,18 +80,8 @@ jobs:
               "targetCompatibility JavaVersion.VERSION_17"
           )
 
-          if "compileOptions" not in text:
-              text += """
-
-          android {
-              compileOptions {
-                  sourceCompatibility JavaVersion.VERSION_17
-                  targetCompatibility JavaVersion.VERSION_17
-              }
-          }
-          """
-
           p.write_text(text)
+
           print("Android project configured successfully.")
           PY
 
